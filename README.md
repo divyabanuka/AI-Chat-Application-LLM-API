@@ -40,13 +40,6 @@ The application maintains conversation history and supports custom AI instructio
 - Google Colab
 - GitHub
 
-## 📂 Project Structure
-
-AI-Chat-Application-LLM-API/
-│
-├── app.py
-├── requirements.txt
-└── README.md
 
 ## 🔄 How It Works
 
