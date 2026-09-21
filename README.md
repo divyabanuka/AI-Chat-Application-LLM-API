@@ -6,7 +6,7 @@ An interactive AI Chat Application powered by the Google Gemini LLM API and buil
 
 🚀 Try the AI Chat Application:
 
-https://ai-chat-application-llm-api-umtgfddg6tr4ms9lkdbcs.streamlit.app/
+https://ai-chat-application-llm-api-umtgfdddg6tr4ms9lkdbcs.streamlit.app/
 
 ## 📌 Project Overview
 
@@ -129,7 +129,7 @@ https://colab.research.google.com/drive/1z7QMaOXM6f1nvMlFM37dKi3MKL7uwGiv?usp=sh
 
 ### 🌐 Live Demo
 
-https://ai-chat-application-llm-api-umtgfddg6tr4ms9lkdbcs.streamlit.app/
+https://ai-chat-application-llm-api-umtgfdddg6tr4ms9lkdbcs.streamlit.app/
 
 ### 💻 GitHub Repository
 
