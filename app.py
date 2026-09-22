@@ -1,4 +1,3 @@
-
 import streamlit as st
 import requests
 
@@ -10,180 +9,105 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- TITLE ----------------
+# ---------------- API KEY ----------------
+
+API_KEY = st.secrets["GEMINI_API_KEY"]
+
+MODEL = "gemini-3.8-flash"
+
+# ---------------- UI ----------------
 
 st.title("🤖 AI Chat Application")
 st.caption("LLM API powered conversational AI")
 
-# ---------------- API CONFIG ----------------
+# ---------------- CHAT FUNCTION ----------------
 
-API_KEY = st.secrets["GEMINI_API_KEY"]
+def ask_gemini(question):
 
-MODEL = "gemini-3.5-flash"
-
-API_URL = (
-    "https://generativelanguage.googleapis.com/"
-    f"v1beta/models/{MODEL}:generateContent"
-)
-
-SYSTEM_INSTRUCTION = """
-You are a helpful AI assistant.
-
-Give clear, simple, and accurate answers.
-
-For technical questions, explain step by step.
-
-Keep responses concise and easy to understand.
-"""
-
-# ---------------- CHAT HISTORY ----------------
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# ---------------- DISPLAY HISTORY ----------------
-
-for message in st.session_state.messages:
-
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# ---------------- USER INPUT ----------------
-
-user_input = st.chat_input("Ask me anything...")
-
-if user_input:
-
-    # Save user message
-    st.session_state.messages.append({
-        "role": "user",
-        "content": user_input
-    })
-
-    # Display user message
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    # ---------------- BUILD CONVERSATION ----------------
-
-    contents = []
-
-    for message in st.session_state.messages:
-
-        role = (
-            "user"
-            if message["role"] == "user"
-            else "model"
-        )
-
-        contents.append({
-            "role": role,
-            "parts": [
-                {
-                    "text": message["content"]
-                }
-            ]
-        })
-
-    # ---------------- API REQUEST ----------------
-
-    data = {
-        "system_instruction": {
-            "parts": [
-                {
-                    "text": SYSTEM_INSTRUCTION
-                }
-            ]
-        },
-        "contents": contents
-    }
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
 
     headers = {
         "Content-Type": "application/json",
         "x-goog-api-key": API_KEY
     }
 
-    try:
+    data = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "text": question
+                    }
+                ]
+            }
+        ]
+    }
 
+    try:
         response = requests.post(
-            API_URL,
+            url,
             headers=headers,
             json=data,
             timeout=60
         )
 
-        # ---------------- SUCCESS ----------------
+        # API error
+        if response.status_code != 200:
+            try:
+                error_data = response.json()
+                error_message = error_data.get("error", {}).get(
+                    "message",
+                    response.text
+                )
+            except Exception:
+                error_message = response.text
 
-        if response.ok:
+            return f"API Error ({response.status_code}): {error_message}"
 
-            result = response.json()
+        result = response.json()
 
-            ai_reply = (
-                result["candidates"][0]
-                ["content"]["parts"][0]["text"]
-            )
+        # Check response
+        candidates = result.get("candidates", [])
 
-            # Save AI response
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": ai_reply
-            })
+        if not candidates:
+            return "No response was returned by Gemini."
 
-            # Display AI response
-            with st.chat_message("assistant"):
-                st.markdown(ai_reply)
+        parts = candidates[0].get("content", {}).get("parts", [])
 
-        # ---------------- QUOTA ERROR ----------------
+        if not parts:
+            return "Gemini returned an empty response."
 
-        elif response.status_code == 429:
+        answer = parts[0].get("text", "")
 
-            st.warning(
-                "⚠️ Gemini API quota is temporarily exhausted."
-            )
+        if not answer:
+            return "Gemini returned no text."
 
-            st.info(
-                "Please try again later when the API quota resets."
-            )
-
-        # ---------------- AUTHENTICATION ERROR ----------------
-
-        elif response.status_code == 401 or response.status_code == 403:
-
-            st.error(
-                "🔑 Gemini API key error. "
-                "Please check your API key in Streamlit Secrets."
-            )
-
-        # ---------------- OTHER API ERRORS ----------------
-
-        else:
-
-            st.error(
-                f"Gemini API temporarily unavailable "
-                f"(Error {response.status_code})."
-            )
-
-    # ---------------- TIMEOUT ----------------
+        return answer
 
     except requests.exceptions.Timeout:
+        return "⏳ Gemini took too long to respond. Please try again."
 
-        st.warning(
-            "⏳ The request took too long. Please try again."
-        )
+    except requests.exceptions.ConnectionError:
+        return "🌐 Connection error. Please check your internet connection."
 
-    # ---------------- CONNECTION ERROR ----------------
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
 
-    except requests.exceptions.RequestException:
 
-        st.error(
-            "🌐 Could not connect to the Gemini API. "
-            "Please check your internet connection and try again."
-        )
+# ---------------- CHAT INPUT ----------------
 
-    # ---------------- OTHER ERROR ----------------
+question = st.chat_input("Ask me anything...")
 
-    except Exception:
+if question:
 
-        st.error(
-            "❌ Something went wrong. Please try again later."
-        )
+    # Show user question
+    with st.chat_message("user"):
+        st.write(question)
+
+    # Get AI response
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            answer = ask_gemini(question)
+
+        st.write(answer)
