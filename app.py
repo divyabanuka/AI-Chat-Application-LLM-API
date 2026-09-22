@@ -133,28 +133,57 @@ if user_input:
             with st.chat_message("assistant"):
                 st.markdown(ai_reply)
 
-        # ---------------- API ERROR ----------------
+        # ---------------- QUOTA ERROR ----------------
+
+        elif response.status_code == 429:
+
+            st.warning(
+                "⚠️ Gemini API quota is temporarily exhausted."
+            )
+
+            st.info(
+                "Please try again later when the API quota resets."
+            )
+
+        # ---------------- AUTHENTICATION ERROR ----------------
+
+        elif response.status_code == 401 or response.status_code == 403:
+
+            st.error(
+                "🔑 Gemini API key error. "
+                "Please check your API key in Streamlit Secrets."
+            )
+
+        # ---------------- OTHER API ERRORS ----------------
 
         else:
 
             st.error(
-                f"Gemini API Error ({response.status_code})"
+                f"Gemini API temporarily unavailable "
+                f"(Error {response.status_code})."
             )
-
-            st.code(response.text)
 
     # ---------------- TIMEOUT ----------------
 
     except requests.exceptions.Timeout:
 
+        st.warning(
+            "⏳ The request took too long. Please try again."
+        )
+
+    # ---------------- CONNECTION ERROR ----------------
+
+    except requests.exceptions.RequestException:
+
         st.error(
-            "Request timed out. Please try again."
+            "🌐 Could not connect to the Gemini API. "
+            "Please check your internet connection and try again."
         )
 
     # ---------------- OTHER ERROR ----------------
 
-    except Exception as e:
+    except Exception:
 
         st.error(
-            f"Unexpected error: {str(e)}"
+            "❌ Something went wrong. Please try again later."
         )
