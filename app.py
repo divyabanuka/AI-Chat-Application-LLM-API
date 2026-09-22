@@ -13,7 +13,7 @@ st.set_page_config(
 
 API_KEY = st.secrets["GEMINI_API_KEY"]
 
-MODEL = "gemini-3.8-flash"
+MODEL = "gemini-3.7-flash"
 
 # ---------------- UI ----------------
 
