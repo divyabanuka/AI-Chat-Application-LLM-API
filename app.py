@@ -20,11 +20,14 @@ MODEL = "gemini-3.8-flash"
 st.title("🤖 AI Chat Application")
 st.caption("LLM API powered conversational AI")
 
-# ---------------- CHAT FUNCTION ----------------
+# ---------------- GEMINI FUNCTION ----------------
 
 def ask_gemini(question):
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
+    url = (
+        f"https://generativelanguage.googleapis.com/"
+        f"v1beta/models/{MODEL}:generateContent"
+    )
 
     headers = {
         "Content-Type": "application/json",
@@ -34,7 +37,6 @@ def ask_gemini(question):
     data = {
         "contents": [
             {
-                "role": "user",
                 "parts": [
                     {
                         "text": question
@@ -49,47 +51,57 @@ def ask_gemini(question):
             url,
             headers=headers,
             json=data,
-            timeout=60
+            timeout=120
         )
 
-        # API error
+        # ---------------- API ERROR ----------------
+
         if response.status_code != 200:
+
             try:
                 error_data = response.json()
-                error_message = error_data.get("error", {}).get(
-                    "message",
-                    response.text
+
+                error_message = (
+                    error_data
+                    .get("error", {})
+                    .get("message", "Unknown Gemini API error")
                 )
+
             except Exception:
                 error_message = response.text
 
-            return f"API Error ({response.status_code}): {error_message}"
+            return f"❌ Gemini API Error {response.status_code}: {error_message}"
+
+        # ---------------- RESPONSE ----------------
 
         result = response.json()
 
-        # Check response
         candidates = result.get("candidates", [])
 
         if not candidates:
-            return "No response was returned by Gemini."
+            return "❌ Gemini returned no answer."
 
-        parts = candidates[0].get("content", {}).get("parts", [])
+        content = candidates[0].get("content", {})
+
+        parts = content.get("parts", [])
 
         if not parts:
-            return "Gemini returned an empty response."
+            return "❌ Gemini returned an empty response."
 
         answer = parts[0].get("text", "")
 
         if not answer:
-            return "Gemini returned no text."
+            return "❌ No text was returned by Gemini."
 
         return answer
 
+    # ---------------- ERRORS ----------------
+
     except requests.exceptions.Timeout:
-        return "⏳ Gemini took too long to respond. Please try again."
+        return "⏳ Request timed out. Please try again."
 
     except requests.exceptions.ConnectionError:
-        return "🌐 Connection error. Please check your internet connection."
+        return "🌐 Connection error. Check your internet connection."
 
     except Exception as e:
         return f"❌ Error: {str(e)}"
@@ -101,12 +113,13 @@ question = st.chat_input("Ask me anything...")
 
 if question:
 
-    # Show user question
+    # User message
     with st.chat_message("user"):
         st.write(question)
 
-    # Get AI response
+    # AI response
     with st.chat_message("assistant"):
+
         with st.spinner("Thinking..."):
             answer = ask_gemini(question)
 
